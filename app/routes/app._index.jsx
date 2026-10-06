@@ -8,6 +8,7 @@ export const loader = async ({ request }) => {
   const upgrade = url.searchParams.get("upgrade");
 
   let confirmationUrl = null;
+  let billingError = "";
 
   if (upgrade === "Starter" || upgrade === "ProfitKit") {
     try {
@@ -17,9 +18,8 @@ export const loader = async ({ request }) => {
       };
       const p = plans[upgrade];
       const shop = session.shop;
-      const shopHandle = shop.replace(".myshopify.com", "");
-      const clientId = (process.env.SHOPIFY_API_KEY || "").trim();
-      const returnUrl = `https://admin.shopify.com/store/${shopHandle}/apps/${clientId}`;
+      const appUrl = (process.env.SHOPIFY_API_KEY ? process.env.SHOPIFY_APP_URL || "" : "").trim().replace(/\/$/, "");
+      const returnUrl = `${appUrl}/app?shop=${shop}`;
 
       const response = await admin.graphql(
         `#graphql
@@ -51,10 +51,17 @@ export const loader = async ({ request }) => {
       );
       const data = await response.json();
       confirmationUrl = data?.data?.appSubscriptionCreate?.confirmationUrl || null;
+      const userErrors = data?.data?.appSubscriptionCreate?.userErrors;
+      if (userErrors && userErrors.length > 0) {
+        billingError = "Shopify says: " + JSON.stringify(userErrors).slice(0, 500);
+      } else if (!confirmationUrl) {
+        billingError = "No URL. Full: " + JSON.stringify(data).slice(0, 500);
+      }
       if (!confirmationUrl) {
         console.error("BILLING CREATE FAIL", JSON.stringify(data).slice(0, 1000));
       }
     } catch (e) {
+      billingError = "Error: " + String(e?.message || e).slice(0, 500);
       console.error("UPGRADE FAIL", e?.message || e);
     }
   }
@@ -70,11 +77,11 @@ export const loader = async ({ request }) => {
     }
   } catch (e) {
   }
-  return { shop: session.shop, currentPlan, confirmationUrl };
+  return { shop: session.shop, currentPlan, confirmationUrl, billingError };
 };
 
 export default function Index() {
-  const { shop, currentPlan, confirmationUrl } = useLoaderData();
+  const { shop, currentPlan, confirmationUrl, billingError } = useLoaderData();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState("");
 
@@ -98,6 +105,11 @@ export default function Index() {
       <p style={{ background: "#f3f4f6", padding: 8, borderRadius: 8 }}>
         Current Plan: <b>{currentPlan}</b>
       </p>
+      {billingError && (
+        <div style={{ background: "#fee2e2", padding: 10, borderRadius: 8, marginBottom: 12, wordBreak: "break-all" }}>
+          {billingError}
+        </div>
+      )}
       {saved && (
         <div style={{ background: "#d1fae5", padding: 10, borderRadius: 8, marginBottom: 12 }}>
           Settings saved!

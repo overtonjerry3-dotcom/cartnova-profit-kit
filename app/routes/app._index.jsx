@@ -1,9 +1,64 @@
 import { useLoaderData } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { billing, session } = await authenticate.admin(request);
+  const { admin, billing, session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const upgrade = url.searchParams.get("upgrade");
+
+  let confirmationUrl = null;
+
+  if (upgrade === "Starter" || upgrade === "ProfitKit") {
+    try {
+      const plans = {
+        Starter: { amount: 9.99, name: "Starter", trialDays: 14 },
+        ProfitKit: { amount: 29, name: "ProfitKit", trialDays: 14 },
+      };
+      const p = plans[upgrade];
+      const shop = session.shop;
+      const shopHandle = shop.replace(".myshopify.com", "");
+      const clientId = (process.env.SHOPIFY_API_KEY || "").trim();
+      const returnUrl = `https://admin.shopify.com/store/${shopHandle}/apps/${clientId}`;
+
+      const response = await admin.graphql(
+        `#graphql
+        mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
+          appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, trialDays: $trialDays, test: $test) {
+            userErrors { field message }
+            confirmationUrl
+            appSubscription { id name status test }
+          }
+        }`,
+        {
+          variables: {
+            name: p.name,
+            returnUrl: returnUrl,
+            trialDays: p.trialDays,
+            test: true,
+            lineItems: [
+              {
+                plan: {
+                  appRecurringPricingDetails: {
+                    price: { amount: p.amount, currencyCode: "USD" },
+                    interval: "EVERY_30_DAYS",
+                  },
+                },
+              },
+            ],
+          },
+        }
+      );
+      const data = await response.json();
+      confirmationUrl = data?.data?.appSubscriptionCreate?.confirmationUrl || null;
+      if (!confirmationUrl) {
+        console.error("BILLING CREATE FAIL", JSON.stringify(data).slice(0, 1000));
+      }
+    } catch (e) {
+      console.error("UPGRADE FAIL", e?.message || e);
+    }
+  }
+
   let currentPlan = "Free";
   try {
     const check = await billing.check({
@@ -15,30 +70,25 @@ export const loader = async ({ request }) => {
     }
   } catch (e) {
   }
-  return { shop: session.shop, currentPlan };
+  return { shop: session.shop, currentPlan, confirmationUrl };
 };
 
 export default function Index() {
-  const { shop, currentPlan } = useLoaderData();
+  const { shop, currentPlan, confirmationUrl } = useLoaderData();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState("");
-  const [error, setError] = useState("");
 
-  const upgrade = async (plan) => {
-    setLoading(plan);
-    setError("");
-    try {
-      const res = await fetch(`/api/upgrade?plan=${plan}`);
-      const data = await res.json();
-      if (data?.confirmationUrl) {
-        window.open(data.confirmationUrl, "_top");
-      } else {
-        setError(data?.error || "Billing failed, try again.");
-      }
-    } catch (e) {
-      setError("Billing failed, try again.");
+  useEffect(() => {
+    if (confirmationUrl) {
+      window.open(confirmationUrl, "_top");
     }
-    setLoading("");
+  }, [confirmationUrl]);
+
+  const upgrade = (plan) => {
+    setLoading(plan);
+    const params = new URLSearchParams(window.location.search);
+    params.set("upgrade", plan);
+    window.location.href = `/app?${params.toString()}`;
   };
 
   return (
@@ -51,11 +101,6 @@ export default function Index() {
       {saved && (
         <div style={{ background: "#d1fae5", padding: 10, borderRadius: 8, marginBottom: 12 }}>
           Settings saved!
-        </div>
-      )}
-      {error && (
-        <div style={{ background: "#fee2e2", padding: 10, borderRadius: 8, marginBottom: 12 }}>
-          {error}
         </div>
       )}
       <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16, background: "#fff" }}>

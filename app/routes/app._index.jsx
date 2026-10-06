@@ -1,103 +1,15 @@
 import { useLoaderData } from "react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { admin, billing, session } = await authenticate.admin(request);
-  const url = new URL(request.url);
-  const upgrade = url.searchParams.get("upgrade");
-
-  let confirmationUrl = null;
-  let billingError = "";
-
-  if (upgrade === "Starter" || upgrade === "ProfitKit") {
-    try {
-      const plans = {
-        Starter: { amount: 9.99, name: "Starter", trialDays: 14 },
-        ProfitKit: { amount: 29, name: "ProfitKit", trialDays: 14 },
-      };
-      const p = plans[upgrade];
-      const shop = session.shop;
-      const appUrl = (process.env.SHOPIFY_API_KEY ? process.env.SHOPIFY_APP_URL || "" : "").trim().replace(/\/$/, "");
-      const returnUrl = `${appUrl}/app?shop=${shop}`;
-
-      const response = await admin.graphql(
-        `#graphql
-        mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
-          appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, trialDays: $trialDays, test: $test) {
-            userErrors { field message }
-            confirmationUrl
-            appSubscription { id name status test }
-          }
-        }`,
-        {
-          variables: {
-            name: p.name,
-            returnUrl: returnUrl,
-            trialDays: p.trialDays,
-            test: true,
-            lineItems: [
-              {
-                plan: {
-                  appRecurringPricingDetails: {
-                    price: { amount: p.amount, currencyCode: "USD" },
-                    interval: "EVERY_30_DAYS",
-                  },
-                },
-              },
-            ],
-          },
-        }
-      );
-      const data = await response.json();
-      confirmationUrl = data?.data?.appSubscriptionCreate?.confirmationUrl || null;
-      const userErrors = data?.data?.appSubscriptionCreate?.userErrors;
-      if (userErrors && userErrors.length > 0) {
-        billingError = "Shopify says: " + JSON.stringify(userErrors).slice(0, 500);
-      } else if (!confirmationUrl) {
-        billingError = "No URL. Full: " + JSON.stringify(data).slice(0, 500);
-      }
-      if (!confirmationUrl) {
-        console.error("BILLING CREATE FAIL", JSON.stringify(data).slice(0, 1000));
-      }
-    } catch (e) {
-      billingError = "Error: " + String(e?.message || e).slice(0, 500);
-      console.error("UPGRADE FAIL", e?.message || e);
-    }
-  }
-
-  let currentPlan = "Free";
-  try {
-    const check = await billing.check({
-      plans: ["ProfitKit", "Starter"],
-      isTest: true,
-    });
-    if (check?.hasActivePayment) {
-      currentPlan = check?.activeSubscriptions?.[0]?.name || "Paid";
-    }
-  } catch (e) {
-  }
-  return { shop: session.shop, currentPlan, confirmationUrl, billingError };
+  const { session } = await authenticate.admin(request);
+  return { shop: session.shop, currentPlan: "Free (Manual)" };
 };
 
 export default function Index() {
-  const { shop, currentPlan, confirmationUrl, billingError } = useLoaderData();
+  const { shop, currentPlan } = useLoaderData();
   const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState("");
-
-  useEffect(() => {
-    if (confirmationUrl) {
-      window.open(confirmationUrl, "_top");
-    }
-  }, [confirmationUrl]);
-
-  const upgrade = (plan) => {
-    setLoading(plan);
-    const params = new URLSearchParams(window.location.search);
-    params.set("upgrade", plan);
-    window.location.href = `/app?${params.toString()}`;
-  };
-
   return (
     <div style={{ padding: 20, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui" }}>
       <h1>CartNova - Profit Kit</h1>
@@ -105,11 +17,6 @@ export default function Index() {
       <p style={{ background: "#f3f4f6", padding: 8, borderRadius: 8 }}>
         Current Plan: <b>{currentPlan}</b>
       </p>
-      {billingError && (
-        <div style={{ background: "#fee2e2", padding: 10, borderRadius: 8, marginBottom: 12, wordBreak: "break-all" }}>
-          {billingError}
-        </div>
-      )}
       {saved && (
         <div style={{ background: "#d1fae5", padding: 10, borderRadius: 8, marginBottom: 12 }}>
           Settings saved!
@@ -128,21 +35,16 @@ export default function Index() {
         </button>
       </div>
       <div style={{ border: "2px solid #000", borderRadius: 12, padding: 16, background: "#fff" }}>
-        <h2>Upgrade to $29/mo</h2>
-        <p>Get ALL 3 apps. 14 days free.</p>
-        <button
-          onClick={() => upgrade("Starter")}
-          style={{ padding: "10px 16px", borderRadius: 8, marginRight: 8, border: "1px solid #000", background: "#fff", cursor: "pointer" }}
+        <h2>Upgrade to $29/mo - Manual for now</h2>
+        <p>Automatic billing coming soon. Chat to activate now.</p>
+        <a
+          href="https://wa.me/2340000000000?text=Hi%20CartNova%20I%20want%20Profit%20Kit%20$29"
+          target="_blank"
+          style={{ display: "inline-block", background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, textDecoration: "none" }}
         >
-          {loading === "Starter" ? "Loading..." : "Start $9.99 Starter"}
-        </button>
-        <button
-          onClick={() => upgrade("ProfitKit")}
-          style={{ background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, border: 0, cursor: "pointer" }}
-        >
-          {loading === "ProfitKit" ? "Loading..." : "Get Profit Kit $29"}
-        </button>
-        <p style={{ fontSize: 12, color: "#666", marginTop: 10 }}>Test mode now. No real charge on test store.</p>
+          Chat on WhatsApp to Upgrade
+        </a>
+        <p style={{ fontSize: 12, color: "#666", marginTop: 10 }}>Replace 2340000000000 with YOUR WhatsApp number later.</p>
       </div>
     </div>
   );

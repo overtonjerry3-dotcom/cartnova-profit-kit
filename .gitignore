@@ -1,0 +1,11 @@
+node_modules/
+.shopify/
+.env
+*.sqlite
+*.sqlite-journal
+prisma/dev.sqlite
+dev.sqlite
+build/
+dist/
+.cache/
+.vercel/

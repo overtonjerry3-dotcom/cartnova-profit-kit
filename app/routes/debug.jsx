@@ -13,6 +13,8 @@ export const loader = async () => {
     ok: true,
     hasApiKey: !!process.env.SHOPIFY_API_KEY,
     hasSecret: !!process.env.SHOPIFY_API_SECRET,
+    hasScopes: !!process.env.SCOPES,
+    scopesPreview: (process.env.SCOPES || "missing").slice(0, 120),
     appUrl: process.env.SHOPIFY_APP_URL || "missing",
     hasDb: !!process.env.DATABASE_URL,
     dbHasNeon: (process.env.DATABASE_URL || "").includes("neon.tech"),

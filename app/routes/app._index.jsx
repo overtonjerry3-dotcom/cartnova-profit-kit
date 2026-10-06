@@ -1,6 +1,5 @@
-import { Page, Layout, Card, Text, BlockStack, Button, Banner } from "@shopify/polaris";
-import { useState } from "react";
 import { useLoaderData } from "react-router";
+import { useState } from "react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
@@ -12,32 +11,34 @@ export default function Index() {
   const { shop } = useLoaderData();
   const [saved, setSaved] = useState(false);
   return (
-    <Page title="CartNova - Profit Kit">
-      <Layout>
-        <Layout.Section>
-          {saved && <Banner tone="success" onDismiss={() => setSaved(false)}>Settings saved!</Banner>}
-          <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">Store: {shop}</Text>
-              <Text as="h2" variant="headingMd">1. Delivery Date Picker - $9 value</Text>
-              <Text as="p" variant="bodyMd">Calendar on cart. Stop failed deliveries.</Text>
-              <Text as="h2" variant="headingMd">2. Returns Saver AI - $15 value</Text>
-              <Text as="p" variant="bodyMd">Auto-answers where is my order 24/7.</Text>
-              <Button variant="primary" onClick={() => setSaved(true)}>Save Settings</Button>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-        <Layout.Section variant="oneThird">
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h2" variant="headingMd">Upgrade to $29/mo</Text>
-              <Text as="p" variant="bodyMd">Get ALL 3 apps. 14 days free.</Text>
-              <Button>Start $9.99 Starter</Button>
-              <Button variant="primary">Get Profit Kit $29</Button>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <div style={{ padding: 20, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui" }}>
+      <h1>CartNova - Profit Kit</h1>
+      <p>Store: {shop}</p>
+      {saved && (
+        <div style={{ background: "#d1fae5", padding: 10, borderRadius: 8, marginBottom: 12 }}>
+          Settings saved!
+        </div>
+      )}
+      <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16, background: "#fff" }}>
+        <h2>1. Delivery Date Picker - $9 value</h2>
+        <p>Calendar on cart. Stop failed deliveries.</p>
+        <h2>2. Returns Saver AI - $15 value</h2>
+        <p>Auto-answers where is my order 24/7.</p>
+        <button
+          onClick={() => setSaved(true)}
+          style={{ background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, border: 0, cursor: "pointer" }}
+        >
+          Save Settings
+        </button>
+      </div>
+      <div style={{ border: "2px solid #000", borderRadius: 12, padding: 16, background: "#fff" }}>
+        <h2>Upgrade to $29/mo</h2>
+        <p>Get ALL 3 apps. 14 days free.</p>
+        <button style={{ padding: "10px 16px", borderRadius: 8, marginRight: 8 }}>Start $9.99 Starter</button>
+        <button style={{ background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, border: 0 }}>
+          Get Profit Kit $29
+        </button>
+      </div>
+    </div>
   );
 }

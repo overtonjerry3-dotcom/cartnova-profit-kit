@@ -1,9 +1,19 @@
-import { useLoaderData } from "react-router";
+import { useLoaderData, Link } from "react-router";
 import { useState } from "react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
   const { billing, session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const upgrade = url.searchParams.get("upgrade");
+
+  if (upgrade === "Starter" || upgrade === "ProfitKit") {
+    throw await billing.request({
+      plan: upgrade,
+      isTest: true,
+    });
+  }
+
   let currentPlan = "Free";
   try {
     const check = await billing.check({
@@ -48,20 +58,18 @@ export default function Index() {
       <div style={{ border: "2px solid #000", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h2>Upgrade to $29/mo</h2>
         <p>Get ALL 3 apps. 14 days free.</p>
-        <a
-          href="/app/billing?plan=Starter"
-          target="_top"
+        <Link
+          to="/app?upgrade=Starter"
           style={{ display: "inline-block", padding: "10px 16px", borderRadius: 8, marginRight: 8, border: "1px solid #000", textDecoration: "none", color: "#000" }}
         >
           Start $9.99 Starter
-        </a>
-        <a
-          href="/app/billing?plan=ProfitKit"
-          target="_top"
+        </Link>
+        <Link
+          to="/app?upgrade=ProfitKit"
           style={{ display: "inline-block", background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, textDecoration: "none" }}
         >
           Get Profit Kit $29
-        </a>
+        </Link>
         <p style={{ fontSize: 12, color: "#666", marginTop: 10 }}>Test mode now. No real charge on test store.</p>
       </div>
     </div>

@@ -7,11 +7,10 @@ export const loader = async ({ request }) => {
   const valid = ["Starter", "ProfitKit"];
   const selected = valid.includes(plan) ? plan : "Starter";
 
-  await billing.request({
+  throw await billing.request({
     plan: selected,
     isTest: true,
   });
-  return null;
 };
 
 export default function Billing() {

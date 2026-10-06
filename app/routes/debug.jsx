@@ -1,3 +1,4 @@
+import { useLoaderData } from "react-router";
 import prisma from "../db.server";
 
 export const loader = async () => {
@@ -6,9 +7,9 @@ export const loader = async () => {
     const count = await prisma.session.count();
     dbTest = `DB OK sessions=${count}`;
   } catch (e) {
-    dbTest = `DB FAIL: ${String(e.message || e).slice(0, 300)}`;
+    dbTest = `DB FAIL: ${String(e?.message || e).slice(0, 500)}`;
   }
-  const data = {
+  return {
     ok: true,
     hasApiKey: !!process.env.SHOPIFY_API_KEY,
     hasSecret: !!process.env.SHOPIFY_API_SECRET,
@@ -16,13 +17,16 @@ export const loader = async () => {
     hasDb: !!process.env.DATABASE_URL,
     dbHasNeon: (process.env.DATABASE_URL || "").includes("neon.tech"),
     dbHasPooler: (process.env.DATABASE_URL || "").includes("pooler"),
-    dbTest: dbTest,
+    dbTest,
   };
-  return new Response(JSON.stringify(data, null, 2), {
-    headers: { "Content-Type": "application/json" },
-  });
 };
 
 export default function Debug() {
-  return <div>Debug route - loader should show JSON</div>;
+  const data = useLoaderData();
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>CartNova Debug</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
 }

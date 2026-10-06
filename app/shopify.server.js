@@ -3,6 +3,7 @@ import {
   ApiVersion,
   AppDistribution,
   shopifyApp,
+  BillingInterval,
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
@@ -28,6 +29,20 @@ const shopify = shopifyApp({
   future: {
     unstable_newEmbeddedAuthStrategy: true,
     removeRest: true,
+  },
+  billing: {
+    Starter: {
+      amount: 9.99,
+      currencyCode: "USD",
+      interval: BillingInterval.Every30Days,
+      trialDays: 14,
+    },
+    ProfitKit: {
+      amount: 29,
+      currencyCode: "USD",
+      interval: BillingInterval.Every30Days,
+      trialDays: 14,
+    },
   },
 });
 

@@ -4,15 +4,18 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-
-  // eslint-disable-next-line no-undef
+  try {
+    await authenticate.admin(request);
+  } catch (e) {
+    console.error("AUTH FAIL FULL:", e?.message || e);
+    console.error(e?.stack || "no stack");
+    throw e;
+  }
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
 
 export default function App() {
   const { apiKey } = useLoaderData();
-
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
@@ -24,7 +27,6 @@ export default function App() {
   );
 }
 
-// Shopify needs React Router to catch some thrown responses, so that their headers are included in the response.
 export function ErrorBoundary() {
   return boundary.error(useRouteError());
 }

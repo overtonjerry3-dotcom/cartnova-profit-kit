@@ -11,14 +11,12 @@ export const loader = async () => {
   }
   return {
     ok: true,
-    hasApiKey: !!process.env.SHOPIFY_API_KEY,
-    hasSecret: !!process.env.SHOPIFY_API_SECRET,
+    apiKeyPreview: (process.env.SHOPIFY_API_KEY || "missing").slice(0, 4),
+    secretLen: (process.env.SHOPIFY_API_SECRET || "").trim().length,
     hasScopes: !!process.env.SCOPES,
-    scopesPreview: (process.env.SCOPES || "missing").slice(0, 120),
+    scopesPreview: (process.env.SCOPES || "missing").slice(0, 80),
     appUrl: process.env.SHOPIFY_APP_URL || "missing",
-    hasDb: !!process.env.DATABASE_URL,
     dbHasNeon: (process.env.DATABASE_URL || "").includes("neon.tech"),
-    dbHasPooler: (process.env.DATABASE_URL || "").includes("pooler"),
     dbTest,
   };
 };

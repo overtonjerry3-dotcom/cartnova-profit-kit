@@ -49,14 +49,14 @@ export default function Index() {
         <h2>Upgrade to $29/mo</h2>
         <p>Get ALL 3 apps. 14 days free.</p>
         <a
-          href="/api/billing?plan=Starter"
+          href="/app/billing?plan=Starter"
           target="_top"
           style={{ display: "inline-block", padding: "10px 16px", borderRadius: 8, marginRight: 8, border: "1px solid #000", textDecoration: "none", color: "#000" }}
         >
           Start $9.99 Starter
         </a>
         <a
-          href="/api/billing?plan=ProfitKit"
+          href="/app/billing?plan=ProfitKit"
           target="_top"
           style={{ display: "inline-block", background: "#000", color: "#fff", padding: "10px 16px", borderRadius: 8, textDecoration: "none" }}
         >
